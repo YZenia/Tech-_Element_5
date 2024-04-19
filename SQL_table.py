@@ -1,6 +1,5 @@
 import sqlite3
 
-<<<<<<< Updated upstream
 def setup_database():
     # Создаем подключение к базе данных SQLite
     with sqlite3.connect('habits_tracker.db') as conn:
@@ -38,16 +37,16 @@ def setup_database():
         );
         ''')
 
-        # Наполняем таблицу привычек начальными данными
-        habits = [("Табакокурение", "🚬", "bad"), ("Здоровое питание", "🥗", "good")]
-        cursor.executemany("INSERT INTO habits (name, description, type) VALUES (?, ?, ?)", habits)
+        # # Наполняем таблицу привычек начальными данными
+        # habits = [("Табакокурение", "🚬", "bad"), ("Здоровое питание", "🥗", "good")]
+        # cursor.executemany("INSERT INTO habits (name, description, type) VALUES (?, ?, ?)", habits)
 
         # Сохраняем изменения
         conn.commit()
 
 if __name__ == "__main__":
     setup_database()
-=======
+
 def connect_to_db():
     return sqlite3.connect('habits_tracker.db')
 
@@ -99,4 +98,4 @@ if __name__ == "__main__":
     # Это место для тестирования функций, если потребуется
     # Пример вызова функции: print(list_user_habits(1))
     pass
->>>>>>> Stashed changes
+
