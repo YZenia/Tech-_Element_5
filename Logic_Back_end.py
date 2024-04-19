@@ -6,7 +6,6 @@ def connect_to_db():
 def add_or_get_user(telegram_id):
     conn = connect_to_db()
     cursor = conn.cursor()
-<<<<<<< Updated upstream
     cursor.execute("INSERT OR IGNORE INTO users (telegram_id) VALUES (?)", (telegram_id,))
     conn.commit()
     cursor.execute("SELECT user_id FROM users WHERE telegram_id=?", (telegram_id,))
@@ -45,7 +44,7 @@ def habit_exists(user_id, habit_name):
     exists = cursor.fetchone()[0]
     conn.close()
     return bool(exists)
-=======
+
     # Проверяем, существует ли пользователь с таким telegram_id
     cursor.execute("SELECT user_id FROM users WHERE telegram_id = ?", (telegram_id,))
     user = cursor.fetchone()
@@ -102,4 +101,4 @@ if __name__ == "__main__":
     # Это место для тестирования функций, если потребуется
     # Пример вызова функции: print(list_user_habits(1))
     pass
->>>>>>> Stashed changes
+

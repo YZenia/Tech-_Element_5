@@ -1,14 +1,14 @@
 import telebot
-<<<<<<< Updated upstream
+
 from Logic_Back_end import connect_to_db, add_or_get_user, add_custom_habit, remove_user_habit, list_habits, habit_exists
-=======
+
 from Logic_Back_end import add_or_get_user, add_habit_to_user, remove_habit_from_user, list_user_habits
->>>>>>> Stashed changes
+
 
 TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
 bot = telebot.TeleBot(TOKEN)
 
-<<<<<<< Updated upstream
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = add_or_get_user(message.from_user.id)
@@ -47,7 +47,7 @@ def list_available_habits(message):
     habits = list_habits()
     habit_list = "\n".join([habit for habit in habits])
     bot.send_message(message.chat.id, "Доступные привычки:\n" + habit_list)
-=======
+
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     user_id = add_or_get_user(message.from_user.id)
@@ -78,6 +78,6 @@ def handle_listhabits(message):
         bot.reply_to(message, "Ваши привычки:\n" + habits_text)
     else:
         bot.reply_to(message, "У вас пока нет добавленных привычек.")
->>>>>>> Stashed changes
+
 
 bot.polling()
