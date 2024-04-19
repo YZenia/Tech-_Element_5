@@ -42,6 +42,19 @@ def create_database():
     conn.commit()
     conn.close()
 
+
+# Функция для добавления нового пользователя
+def add_user(username):
+    conn = sqlite3.connect('habit_tracker.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO users (username)
+        VALUES (?)
+    ''', (username,))
+
+    conn.commit()
+    conn.close()
 # Функция для добавления привычки с детализацией описания и цели
 def add_habit(user_id, habit_name, habit_description, habit_goal, habit_frequency):
     conn = sqlite3.connect('habit_tracker.db')
@@ -117,6 +130,8 @@ def add_progress(user_id, habit_name):
 
     conn.close()
 
+# Пример использования функции для добавления записи о выполнении привычки
+# add_user("Новый_пользователь")
 # Пример использования функции для добавления записи о выполнении привычки
 #add_progress(3, 'Постоянное обучение')
 
