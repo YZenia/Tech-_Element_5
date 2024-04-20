@@ -1,7 +1,7 @@
 import sqlite3
 
 def connect_to_db():
-    return sqlite3.connect('habits_tracker.db')
+    return sqlite3.connect('habit_tracker.db')
 
 def add_or_get_user(telegram_id):
     conn = connect_to_db()
