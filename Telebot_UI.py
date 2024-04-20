@@ -17,6 +17,7 @@ def send_welcome(message):
 @bot.message_handler(commands=['addhabit'])
 def add_habit(message):
     msg = bot.send_message(message.chat.id, "Введите название привычки, описание и частоту напоминаний в формате: название;описание;частота")
+    print(msg)
     bot.register_next_step_handler(msg, process_add_habit)
 
 def process_add_habit(message):

@@ -13,6 +13,7 @@ def add_or_get_user(telegram_id):
     conn.close()
     return user_id
 
+
 def add_custom_habit(user_id, habit_name, description, frequency):
     conn = connect_to_db()
     cursor = conn.cursor()

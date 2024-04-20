@@ -30,7 +30,7 @@ def setup_database():
         CREATE TABLE IF NOT EXISTS user_habits (
             user_id INTEGER,
             habit_id INTEGER,
-            reminder_frequency TEXT CHECK(reminder_frequency IN ('daily', 'weekly', 'monthly')) NOT NULL,
+            reminder_frequency TEXT CHECK(reminder_frequency IN ('ежедневно', 'еженедельно', 'ежемесячно')) NOT NULL,
             PRIMARY KEY (user_id, habit_id),
             FOREIGN KEY (user_id) REFERENCES users(user_id),
             FOREIGN KEY (habit_id) REFERENCES habits(habit_id)
