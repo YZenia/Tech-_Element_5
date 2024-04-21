@@ -3,19 +3,47 @@ import sqlite3
 def connect_to_db():
     return sqlite3.connect('habit_tracker1.db')
 
+
 def add_or_get_user(username):
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE username=?", (username,))
-    user = cursor.fetchone()
-    if user:
-        user_id = user[0]
+
+    print(f"DEBUG: Checking if user '{username}' exists in the database.")
+
+    # Проверка, существует ли уже такой пользователь
+    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+    result = cursor.fetchone()
+
+    if result:
+        user_id = result[0]
+        print(f"DEBUG: User '{username}' found with ID {user_id}.")
     else:
+        print(f"DEBUG: User '{username}' not found, adding to database.")
+        # Добавление нового пользователя, если он не найден
         cursor.execute("INSERT INTO users (username) VALUES (?)", (username,))
         conn.commit()
         user_id = cursor.lastrowid
+        print(f"DEBUG: New user '{username}' added with ID {user_id}.")
+
     conn.close()
     return user_id
+# def add_or_get_user(username):
+#     conn = connect_to_db()
+#     cursor = conn.cursor()
+#
+#     # Проверка, существует ли уже такой пользователь
+#     cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+#     result = cursor.fetchone()
+#     if result:
+#         user_id = result[0]
+#     else:
+#         # Добавление нового пользователя, если он не найден
+#         cursor.execute("INSERT INTO users (username) VALUES (?)", (username,))
+#         conn.commit()
+#         user_id = cursor.lastrowid
+#
+#     conn.close()
+#     return user_id
 
 def add_new_habit(user_id, habit_name, description, goal, frequency):
     conn = connect_to_db()
@@ -38,20 +66,21 @@ def get_all_habits():
     habits = cursor.fetchall()
     conn.close()
     return habits
+#
 def get_user_habits(user_id):
-    conn = connect_to_db()  # Убедитесь, что эта функция правильно подключается к вашей базе данных
+    conn = connect_to_db()
     cursor = conn.cursor()
-    # Обновленный запрос для извлечения названий привычек пользователя по его ID
     cursor.execute("""
-     SELECT h.habit_name
-     FROM user_habits uh
-     JOIN habits h ON uh.habit_id = h.id
-     WHERE uh.user_id = ?
+        SELECT uh.user_id, h.habit_name
+        FROM user_habits uh
+        JOIN habits h ON uh.habit_id = h.id
+        WHERE uh.user_id = ?
+    """, (user_id,))
+    habits = cursor.fetchall()
+    conn.close()
+    return habits
 
-        """, (user_id,))
-    habits = cursor.fetchall()  # Получаем все записи, удовлетворяющие запросу
-    conn.close()  # Закрываем соединение с базой данных
-    return habits  # Возвращаем список привычек пользователя
+
 
 
 # def get_user_habits(user_id):
