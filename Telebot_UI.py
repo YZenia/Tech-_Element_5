@@ -1,5 +1,6 @@
 import telebot
 from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from Logic_Back_end import add_or_get_user, add_habit_to_user_list, get_all_habits, get_user_habits
 
 TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
@@ -20,14 +21,7 @@ def generate_markup(habits, page=0):
 
     return markup
 
-# @bot.message_handler(commands=['start'])
-# def send_welcome(message):
-#     username = message.from_user.username
-#     if username is None:
-#         bot.reply_to(message, "Ваш аккаунт Telegram не имеет username. Пожалуйста, установите его.")
-#         return
-#     user_id = add_or_get_user(username)
-#     bot.reply_to(message, "Добро пожаловать! Используйте /allhabits для просмотра всех привычек.")
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     username = message.from_user.username
@@ -50,9 +44,6 @@ def send_welcome(message):
 def show_all_habits_button(call):
     show_all_habits(call.message)
 
-@bot.callback_query_handler(func=lambda call: call.data == 'list_habits')
-def list_user_habits_button(call):
-    list_user_habits(call.message)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'add_new_habit')
 def add_new_habit_button(call):
@@ -84,91 +75,26 @@ def handle_pagination(call):
     markup = generate_markup(habits, page)
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Выберите привычку для добавления:", reply_markup=markup)
 
-# @bot.message_handler(commands=['listhabits'])
-# def list_user_habits(message):
-#     # Получаем user_id пользователя по его username
-#     user_id = add_or_get_user(message.from_user.username)
-#     print(f"DEBUG: User ID is {user_id}")  # Для отладки: вывод user_id
-#
-#     # Получение списка привычек пользователя по его user_id
-#     habits = get_user_habits(user_id)
-#     print(f"DEBUG: Retrieved habits are {habits}")  # Для отладки: вывод полученных привычек
-#
-#     # Проверяем, есть ли у пользователя привычки
-#     if not habits:
-#         bot.send_message(message.chat.id, "Ваш список привычек пуст.")
-#         return
-#
-#     # Создаем inline-кнопки для каждой привычки
-#     markup = telebot.types.InlineKeyboardMarkup()
-#     for habit_id, habit_name in habits:
-#         button = telebot.types.InlineKeyboardButton(text=habit_name, callback_data=f'add_{habit_id}')
-#         markup.add(button)
-#
-#     # Отправляем сообщение с кнопками, чтобы пользователь мог выбрать привычку для добавления
-#     bot.send_message(message.chat.id, "Выберите привычку для добавления:", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: True)
-def handle_query(call):
+@bot.callback_query_handler(func=lambda call: call.data == 'list_habits')
+def list_user_habits(call):
     username = call.from_user.username
     if username is None:
         bot.answer_callback_query(call.id, "У вашего профиля в Telegram нет username!")
         return
 
-    print(f"DEBUG: Username is {username}")
     user_id = add_or_get_user(username)
-    print(f"DEBUG: User ID is {user_id}")
 
     # Получение списка привычек пользователя
     habits = get_user_habits(user_id)
-    print(f"DEBUG: Retrieved habits are {habits}")  # Вывод полученных привычек для отладки
 
     if not habits:
-        bot.send_message(call.chat.id, "Ваш список привычек пуст.")
+        bot.send_message(call.message.chat.id, "Ваш список привычек пуст.")
         return
 
-
-    # Создаем список кнопок
-    markup = telebot.types.InlineKeyboardMarkup()
-    for habit_id, habit_name in habits:
-        button = telebot.types.InlineKeyboardButton(text=habit_name, callback_data=f'add_{habit_id}')
-        markup.add(button)
-
-    # Отправляем сообщение с кнопками
-    bot.send_message(call.chat.id, "Выберите привычку для добавления:", reply_markup=markup)
-
-# @bot.message_handler(commands=['listhabits'])
-# def list_user_habits(message):
-#     # Получение user_id по username
-#     user_id = add_or_get_user(message.from_user.username)
-#     print(f"DEBUG: User ID is {user_id}")  # Вывод user_id для отладки
-#
-#     # Получение списка привычек пользователя
-#     habits = get_user_habits(user_id)
-#     print(f"DEBUG: Retrieved habits are {habits}")  # Вывод полученных привычек для отладки
-#
-#     # Проверка, есть ли привычки у пользователя
-#     if not habits:
-#         bot.send_message(message.chat.id, "Ваш список привычек пуст.")
-#         return
-#
-#
-#     # Формирование текста для вывода списка привычек
-#     habits_text = "\n".join(habit_name for (habit_name,) in habits)
-#     bot.send_message(message.chat.id, "Ваши привычки:\n" + habits_text)
-
-# @bot.message_handler(commands=['listhabits'])
-# def list_user_habits(message):
-#     user_id = add_or_get_user(message.from_user.username)
-#     habits = get_user_habits(user_id)
-#     if not habits:
-#         bot.send_message(message.chat.id, "Ваш список привычек пуст.")
-#         return
-#     # Проверка структуры данных
-#     print("DEBUG: Habits data structure:", habits)
-#     habits_text = "\n".join(name for (name,) in habits)  # Измененная строка
-#     bot.send_message(message.chat.id, "Ваши привычки:\n" + habits_text)
-
+    # Формирование текста сообщения со списком привычек
+    habits_text = "\n".join(habit_name for _, habit_name in habits)
+    bot.send_message(call.message.chat.id, "Ваши привычки:\n" + habits_text)
 
 
 bot.polling()

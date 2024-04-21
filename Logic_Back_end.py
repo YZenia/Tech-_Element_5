@@ -27,23 +27,7 @@ def add_or_get_user(username):
 
     conn.close()
     return user_id
-# def add_or_get_user(username):
-#     conn = connect_to_db()
-#     cursor = conn.cursor()
-#
-#     # Проверка, существует ли уже такой пользователь
-#     cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
-#     result = cursor.fetchone()
-#     if result:
-#         user_id = result[0]
-#     else:
-#         # Добавление нового пользователя, если он не найден
-#         cursor.execute("INSERT INTO users (username) VALUES (?)", (username,))
-#         conn.commit()
-#         user_id = cursor.lastrowid
-#
-#     conn.close()
-#     return user_id
+
 
 def add_new_habit(user_id, habit_name, description, goal, frequency):
     conn = connect_to_db()
@@ -80,15 +64,4 @@ def get_user_habits(user_id):
     conn.close()
     return habits
 
-
-
-
-# def get_user_habits(user_id):
-#     conn = connect_to_db()
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT uh.user_id, h.habit_name, uh.reminder_frequency FROM user_habits uh JOIN habits h ON uh.habit_id = h.id WHERE uh.user_id = ?", (user_id,))
-#     habits = cursor.fetchall()
-#     print("DEBUG: Retrieved habits:", habits)  # Добавить для отладки
-#     conn.close()
-#     return habits
 
