@@ -6,7 +6,8 @@ from telebot import types
 # ??? ЗАПРОС НА УДАЛЕНИЕ ???
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # Импорт функций из файла Python Logic_Back_end.py
-from Logic_Back_end import add_or_get_user, add_habit_to_user_list, get_all_habits, get_user_habits
+from Logic_Back_end import (add_or_get_user,
+                            add_habit_to_user_list, get_all_habits, get_user_habits, get_new_habits)
 
 # Ввод токена основного телеграм-бота и инициализация программы:
 # TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
@@ -20,7 +21,7 @@ bot = telebot.TeleBot(TEST_TOKEN)
 
 
 # Функция вызова списка привычек из таблицы 'habits' в виде клавиатуры для выбора пользователя
-def generate_markup(habits, page=0):
+def generate_markup(habits, page=0, list_type='habits'):
     markup = types.InlineKeyboardMarkup()
     start_index = page * 10
     end_index = min(start_index + 10, len(habits))
@@ -29,9 +30,9 @@ def generate_markup(habits, page=0):
         markup.add(button)
 
     if start_index > 0:
-        markup.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=f'page_{page - 1}'))
+        markup.add(types.InlineKeyboardButton("⬅️ Назад", callback_data=f'page_{page - 1}_{list_type}'))
     if end_index < len(habits):
-        markup.add(types.InlineKeyboardButton("Вперед ➡️", callback_data=f'page_{page + 1}'))
+        markup.add(types.InlineKeyboardButton("Вперед ➡️", callback_data=f'page_{page + 1}_{list_type}'))
 
     return markup
 
@@ -56,28 +57,42 @@ def send_welcome(message):
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
 
 
-# Функция - обработка запроса на вызов функции show_all_habits() - СМ. СТРОКУ 75
+# Функция - обработка запроса на вызов функции show_all_habits() - СМ. СТРОКУ 89
 @bot.callback_query_handler(func=lambda call: call.data == 'all_habits')
 def show_all_habits_button(call):
     show_all_habits(call.message)
 
 
-# Функция - создание кнопки для добавления пользователю новой привычки из таблицы 'habits'
+# Функция по нажатию кнопки "Добавить новую привычку":
+# вывод всех привычек из таблицы 'habits', кроме уже добавленных в список привычек пользователя;
+# с возможностью выбора новой привычки для добавления в список привычек пользователя
 @bot.callback_query_handler(func=lambda call: call.data == 'add_new_habit')
-def add_new_habit_button(call):
+def add_new_habit(call):
     # Эта функция должна быть реализована для начала процесса добавления новой привычки
-    bot.send_message(call.message.chat.id, "Функция добавления новой привычки ещё не реализована.")
+    # bot.send_message(call.message.chat.id, "Функция добавления новой привычки ещё не реализована.")
+    username = call.from_user.username
+    if username is None:
+        bot.answer_callback_query(call.id, "У вашего профиля в Telegram нет username!")
+        return
+
+    user_id = add_or_get_user(username)
+    new_habits = get_new_habits(user_id)
+    if not new_habits:
+        bot.send_message(call.message.chat.id, "Список привычек пуст.")
+        return
+    markup = generate_markup(new_habits, list_type='newhabits')
+    bot.send_message(call.message.chat.id, "Выберите привычку для добавления:", reply_markup=markup)
 
 
 # Функция - вывод всех привычек из таблицы 'habits' с возможностью выбора
-# новой привычки для добавления в список привычек пользователя - СМ. СТРОКУ 59
+# новой привычки для добавления в список привычек пользователя - СМ. СТРОКУ 61
 @bot.message_handler(commands=['allhabits'])
 def show_all_habits(message):
     habits = get_all_habits()
     if not habits:
         bot.send_message(message.chat.id, "Список привычек пуст.")
         return
-    markup = generate_markup(habits)
+    markup = generate_markup(habits, list_type='habits')
     bot.send_message(message.chat.id, "Выберите привычку для добавления:", reply_markup=markup)
 
 
@@ -94,9 +109,13 @@ def handle_add_habit(call):
 # Функция - обработка запроса на перелистывание страниц списка привычек из 'habits'
 @bot.callback_query_handler(func=lambda call: call.data.startswith('page_')) #листать список списка
 def handle_pagination(call):
-    page = int(call.data.split('_')[1])
-    habits = get_all_habits()
-    markup = generate_markup(habits, page)
+    _, page, list_type = call.data.split('_')
+    page = int(page)
+    if list_type == 'habits':
+        habits = get_all_habits()
+    elif list_type == 'newhabits':
+        habits = get_new_habits(call.from_user.username)
+    markup = generate_markup(habits, page, list_type)
     bot.edit_message_text(
         chat_id=call.message.chat.id, message_id=call.message.message_id,
         text="Выберите привычку для добавления:", reply_markup=markup
