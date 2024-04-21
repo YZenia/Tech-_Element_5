@@ -1,6 +1,8 @@
+# Импортируем модуль для работы с SQLite
 import sqlite3
 
 
+# Функция создания базы данных
 def setup_database():
     conn = sqlite3.connect('habit_tracker1.db')
     cursor = conn.cursor()
@@ -45,6 +47,6 @@ def setup_database():
     print("Database and tables created successfully.")
 
 
-
+# Вызов функции создания базы данных при условии, что файл запущен как основная программа (не import)
 if __name__ == "__main__":
     setup_database()
