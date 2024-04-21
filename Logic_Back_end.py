@@ -70,6 +70,23 @@ def get_all_habits():
     return habits
 
 
+# Функция вывода списка всех привычек из таблицы 'habits', кроме тех,
+# которые уже в списке пользователя
+def get_new_habits(user_id):
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT h.id, h.habit_name FROM habits h
+    WHERE h.id NOT IN (
+        SELECT uh.habit_id FROM user_habits uh
+        WHERE uh.user_id = ?)
+    """, (user_id,)
+                   )
+    new_habits = cursor.fetchall()
+    conn.close()
+    return new_habits
+
+
 # Функция вывода списка всех привычек конкретного пользователя из таблицы 'user_habits'
 def get_user_habits(user_id):
     conn = connect_to_db()
