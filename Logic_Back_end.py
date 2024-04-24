@@ -45,6 +45,19 @@ def add_new_habit(user_id, habit_name, description, goal, frequency):
     )
     conn.commit()
     conn.close()
+def add_habit_to_user_list_directly(user_id, habit_name, description, goal, frequency='ежедневно'):
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    try:
+        # Добавляем привычку в таблицу habits
+        cursor.execute("INSERT INTO habits (user_id, habit_name, habit_description, habit_goal, habit_frequency) VALUES (?, ?, ?, ?, ?)",
+                       (user_id, habit_name, description, goal, frequency))
+        habit_id = cursor.lastrowid  # Получаем ID новой привычки
+        # Добавляем привычку в список привычек пользователя
+        cursor.execute("INSERT INTO user_habits (user_id, habit_id, reminder_frequency) VALUES (?, ?, ?)", (user_id, habit_id, frequency))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # Функция добавления новой привычки в базу данных в таблицу 'user_habits'
@@ -61,10 +74,22 @@ def add_habit_to_user_list(user_id, habit_id, frequency='ежедневно'):
 
 
 # Функция вывода списка всех привычек из таблицы 'habits'
+# def get_all_habits():
+#     conn = connect_to_db()
+#     cursor = conn.cursor()
+#     cursor.execute("SELECT id, habit_name FROM habits")
+#     habits = cursor.fetchall()
+#     conn.close()
+#     return habits
 def get_all_habits():
+    """
+    Получить список всех привычек, где user_id равен NULL.
+    Это могут быть общедоступные или стандартные привычки, доступные всем пользователям.
+    """
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, habit_name FROM habits")
+    # Изменение запроса для фильтрации привычек, где user_id равен NULL
+    cursor.execute("SELECT id, habit_name FROM habits WHERE user_id IS NULL")
     habits = cursor.fetchall()
     conn.close()
     return habits
