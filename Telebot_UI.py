@@ -39,7 +39,7 @@ def generate_markup(habits, page=0, list_type='habits'):
 
 
 # Функция-приветствие нового пользователя
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['menu'])
 def send_welcome(message):
     username = message.from_user.username
     if username is None:
