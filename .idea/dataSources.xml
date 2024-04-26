@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="habit_tracker1.db" uuid="585d000a-7705-49ff-9fe6-742338d57143">
+    <data-source source="LOCAL" name="habit_tracker1.db" uuid="896e7dde-3f37-40d0-82a1-df73e92fd470">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:C:\Program Files\JetBrains\PyCharm 2023.3.4\GitHub\Tech-_Element_5\habit_tracker1.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/habit_tracker1.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

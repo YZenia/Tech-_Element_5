@@ -168,8 +168,20 @@ def get_user_habits(user_id):
     conn.close()
     return habits
 
-def get_habit_details():
-    pass
+def delete_habit_by_id(habit_id):
+    try:
+        with connect_to_db() as conn:
+            cursor = conn.cursor()
+            # Удаление привычки из таблицы user_habits
+            cursor.execute("DELETE FROM user_habits WHERE habit_id = ?", (habit_id,))
+            # Удаление привычки из таблицы habits
+            cursor.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
+            conn.commit()
+            print("Привычка успешно удалена.")
+            return True
+    except Exception as e:
+        print(f"Ошибка при удалении привычки: {e}")
+        return False
 
 
 

@@ -8,10 +8,10 @@ from telebot import types
 # Импорт функций из файла Python Logic_Back_end.py
 from Logic_Back_end import (add_or_get_user,
                             add_habit_to_user_list, get_user_habits, get_new_habits,
-                            add_habit_to_user_list_directly)  # get_all_habits
+                            add_habit_to_user_list_directly, delete_habit_by_id)  # get_all_habits
 
 # Ввод токена основного телеграм-бота и инициализация программы:
-TOKEN = '6955302660:AAFxbQCz0FNNzuUvMJvCx0MqK1LAQDjN1Is'
+TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
 bot = telebot.TeleBot(TOKEN)
 
 # !!! ПЕРЕКЛЮЧИТЬ НА ОСНОВНОЙ ТЕЛЕГРАМ-БОТ В ФИНАЛЬНОЙ ВЕРСИИ ПРОГРАММЫ !!!
@@ -242,12 +242,18 @@ def edit_habit(call):
     bot.answer_callback_query(call.id)
     bot.send_message(call.message.chat.id, "Введите новые данные для привычки. (Это место для диалога редактирования)")
 
-# @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_'))
-# def delete_habit(call):
-#     habit_id = call.data.split('_')[1]
-#     delete_habit_by_id(habit_id)  # функция удаляет привычку по ID
-#     bot.answer_callback_query(call.id)
-#     bot.send_message(call.message.chat.id, "Привычка удалена.")
+@bot.callback_query_handler(func=lambda call: call.data.startswith('delete_'))
+def delete_habit(call):
+    habit_id = call.data.split('_')[1]  # Извлекаем ID привычки из данных callback
+    result = delete_habit_by_id(habit_id)  # Пытаемся удалить привычку и получаем результат операции
+
+    # Проверяем, было ли удаление успешным
+    if result:
+        bot.answer_callback_query(call.id, "Привычка успешно удалена.")
+        bot.send_message(call.message.chat.id, "Привычка успешно удалена.")
+    else:
+        bot.answer_callback_query(call.id, "Не удалось удалить привычку. Пожалуйста, попробуйте позже.")
+        bot.send_message(call.message.chat.id, "Не удалось удалить привычку. Пожалуйста, попробуйте позже.")
 
 # Запуск работы телеграм-бота с пользователем
 bot.polling()
