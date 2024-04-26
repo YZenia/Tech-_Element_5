@@ -11,7 +11,7 @@ from Logic_Back_end import (add_or_get_user,
                             add_habit_to_user_list_directly)  # get_all_habits
 
 # Ввод токена основного телеграм-бота и инициализация программы:
-TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
+TOKEN = '6955302660:AAFxbQCz0FNNzuUvMJvCx0MqK1LAQDjN1Is'
 bot = telebot.TeleBot(TOKEN)
 
 # !!! ПЕРЕКЛЮЧИТЬ НА ОСНОВНОЙ ТЕЛЕГРАМ-БОТ В ФИНАЛЬНОЙ ВЕРСИИ ПРОГРАММЫ !!!
@@ -37,6 +37,23 @@ def generate_markup(habits, page=0, list_type='habits'):
 
     return markup
 
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    username = message.from_user.username
+    if username is None:
+        bot.reply_to(message, "Ваш аккаунт Telegram не имеет username. Пожалуйста, установите его.")
+        return
+
+    user_id = add_or_get_user(username)
+    welcome_text = "Добро пожаловать! Вот основные команды, которые вы можете использовать в боте Привычек:"
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    commands_buttons = [
+        types.InlineKeyboardButton("Добавить свою П.", callback_data='add_new_habit'),
+        types.InlineKeyboardButton("Настройка моих П.", callback_data='list_habits'),
+        types.InlineKeyboardButton("База Привычек", callback_data='all_habits')
+    ]
+    markup.add(*commands_buttons)
+    bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
 
 # Функция-приветствие нового пользователя
 @bot.message_handler(commands=['menu'])
@@ -48,7 +65,7 @@ def send_welcome(message):
 
     user_id = add_or_get_user(username)
     welcome_text = "Добро пожаловать! Вот основные команды, которые вы можете использовать в боте Привычек:"
-    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup = types.InlineKeyboardMarkup(row_width=1)
     commands_buttons = [
         types.InlineKeyboardButton("Добавить свою П.", callback_data='add_new_habit'),
         types.InlineKeyboardButton("Настройка моих П.", callback_data='list_habits'),
@@ -133,13 +150,22 @@ def show_all_habits(call):
 
 
 # Функция - обработка запроса на добавление пользователю новой привычки из таблицы 'habits'
-@bot.callback_query_handler(func=lambda call: call.data.startswith('add_')) # добовление из списка
+@bot.callback_query_handler(func=lambda call: call.data.startswith('add_'))
 def handle_add_habit(call):
     habit_id = int(call.data.split('_')[1])
     user_id = add_or_get_user(call.from_user.username)
-    add_habit_to_user_list(user_id, habit_id, "ежедневно")  # Пример частоты
-    bot.answer_callback_query(call.id, "Привычка добавлена в ваш список.")
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Привычка добавлена!")
+    result = add_habit_to_user_list(user_id, habit_id, "ежедневно")  # Пример частоты
+
+    if result is None:
+        # Обработка случая, когда достигнуто максимальное количество привычек
+        bot.answer_callback_query(call.id, "Максимальное количество привычек достигнуто.")
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Максимальное количество привычек достигнуто!")
+    else:
+        # Обработка успешного добавления привычки
+        bot.answer_callback_query(call.id, "Привычка добавлена в ваш список.")
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Привычка добавлена!")
+
+
 
 
 # Функция - обработка запроса на перелистывание страниц списка привычек из 'habits'
@@ -171,15 +197,57 @@ def list_user_habits(call):
 
     # Получение списка привычек пользователя
     habits = get_user_habits(user_id)
+    print(habits)
 
     if not habits:
         bot.send_message(call.message.chat.id, "Ваш список привычек пуст.")
         return
 
-    # Формирование текста сообщения со списком привычек
-    habits_text = "\n".join(habit_name for _, habit_name in habits)
-    bot.send_message(call.message.chat.id, "Ваши привычки:\n" + habits_text)
+    # Формирование текста сообщения со списком привычек в виде кнопок
+    markup = types.InlineKeyboardMarkup()
+    for user_id, habit_name, habit_id  in habits:
+        print(user_id, habit_name, habit_id)
+        habit_button = types.InlineKeyboardButton(habit_name, callback_data=f'habit_{habit_id}_{habit_name}')
 
+        markup.add(habit_button)
+
+    bot.send_message(call.message.chat.id, "Ваши привычки:\n", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('habit_'))
+def habit_options(call):
+    habit_id = call.data.split('_')[1]  # получаем ID привычки из данных callback
+    habit_name = call.data.split('_')[2] # получаем name привычки из данных callback
+
+    markup = types.InlineKeyboardMarkup()
+
+    # Создание кнопок для различных действий
+    view_btn = types.InlineKeyboardButton("Просмотр", callback_data=f'view_{habit_id}')
+    edit_btn = types.InlineKeyboardButton("Изменение", callback_data=f'edit_{habit_id}')
+    delete_btn = types.InlineKeyboardButton("Удаление", callback_data=f'delete_{habit_id}')
+
+    markup.add(view_btn, edit_btn, delete_btn)
+    bot.send_message(call.message.chat.id, f"Выберите действие для {habit_name}", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('view_'))
+def view_habit(call):
+    habit_id = call.data.split('_')[1]
+    habit_details = get_user_habits(habit_id)  # предполагается, что эта функция возвращает детали привычки
+    bot.answer_callback_query(call.id)
+    bot.send_message(call.message.chat.id, f'Детали привычки: {habit_details}')
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('edit_'))
+def edit_habit(call):
+    habit_id = call.data.split('_')[1]
+    # Предполагаем, что функция редактирования возвращает успешный результат или сообщение об ошибке
+    bot.answer_callback_query(call.id)
+    bot.send_message(call.message.chat.id, "Введите новые данные для привычки. (Это место для диалога редактирования)")
+
+# @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_'))
+# def delete_habit(call):
+#     habit_id = call.data.split('_')[1]
+#     delete_habit_by_id(habit_id)  # функция удаляет привычку по ID
+#     bot.answer_callback_query(call.id)
+#     bot.send_message(call.message.chat.id, "Привычка удалена.")
 
 # Запуск работы телеграм-бота с пользователем
 bot.polling()

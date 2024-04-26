@@ -39,9 +39,24 @@ def add_or_get_user(username):
 def add_new_habit(user_id, habit_name, description, goal, frequency):
     conn = connect_to_db()
     cursor = conn.cursor()
+    # true_user_id = add_or_get_user(user_id)
+    # print(true_user_id)
+    # # result = cursor.execute(
+    # #     "SELECT id, user_id  FROM users_habits WHERE username = ?", (user_id,)
+    # # )
+    # # print(result)
+    # cursor.execute(
+    #     "SELECT SELECT COUNT(habit_id)  FROM user_habits WHERE user_id = ?", (true_user_id,)
+    # )
+    # count = cursor.fetchone()[0]
+    # print(f'Количество {count}')
+    # if count >= 3:
+    #     return print(f"Maximum number of habits reached.\n"
+    #                  f"Cannot add more habits.")
+    # else:
     cursor.execute(
-        "INSERT INTO habits (user_id, habit_name, habit_description, habit_goal, habit_frequency) "
-        "VALUES (?, ?, ?, ?, ?)", (user_id, habit_name, description, goal, frequency)
+    "INSERT INTO habits (user_id, habit_name, habit_description, habit_goal, habit_frequency) "
+            "VALUES (?, ?, ?, ?, ?)", (user_id, habit_name, description, goal, frequency)
     )
     conn.commit()
     conn.close()
@@ -51,11 +66,12 @@ def add_habit_to_user_list_directly(username, user_id, habit_name, description, 
     conn = connect_to_db()
     cursor = conn.cursor()
     true_user_id = add_or_get_user(username)
+    print(f"USER_ID {true_user_id}")
     try:
         # Добавляем привычку в таблицу habits
         cursor.execute("INSERT INTO habits (user_id, habit_name, habit_description, habit_goal, habit_frequency) "
                        "VALUES (?, ?, ?, ?, ?)",
-                       (user_id, habit_name, description, goal, frequency))
+                       (true_user_id, habit_name, description, goal, frequency))
         habit_id = cursor.lastrowid  # Получаем ID новой привычки
         # Добавляем привычку в список привычек пользователя
         cursor.execute("INSERT INTO user_habits (user_id, habit_id, reminder_frequency) VALUES (?, ?, ?)",
@@ -69,13 +85,31 @@ def add_habit_to_user_list_directly(username, user_id, habit_name, description, 
 # - привычки конкретного пользователя
 def add_habit_to_user_list(user_id, habit_id, frequency='ежедневно'):
     conn = connect_to_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO user_habits (user_id, habit_id, reminder_frequency) "
-        "VALUES (?, ?, ?)", (user_id, habit_id, frequency)
-    )
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        add_or_get_user(user_id)
+
+        cursor.execute(
+            "SELECT COUNT(habit_id) FROM user_habits WHERE user_id = ?", (user_id,)
+        )
+        count = cursor.fetchone()[0]
+
+        if count >= 3:
+            print("Максимальное количество привычек достигнуто.")
+            return None
+        else:
+            cursor.execute(
+                "INSERT INTO user_habits (user_id, habit_id, reminder_frequency) "
+                "VALUES (?, ?, ?)", (user_id, habit_id, frequency)
+            )
+            conn.commit()
+            print("Привычка успешно добавлена.")
+            return True
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+        return None
+    finally:
+        conn.close()
 
 
 # Функция вывода списка всех привычек из таблицы 'habits'
@@ -125,7 +159,7 @@ def get_user_habits(user_id):
     conn = connect_to_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT uh.user_id, h.habit_name
+        SELECT uh.user_id, h.habit_name, uh.habit_id
         FROM user_habits uh
         JOIN habits h ON uh.habit_id = h.id
         WHERE uh.user_id = ?
@@ -133,5 +167,11 @@ def get_user_habits(user_id):
     habits = cursor.fetchall()
     conn.close()
     return habits
+
+def get_habit_details():
+    pass
+
+
+
 
 
