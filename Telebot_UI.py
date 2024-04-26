@@ -207,7 +207,7 @@ def list_user_habits(call):
     markup = types.InlineKeyboardMarkup()
     for user_id, habit_name, habit_id  in habits:
         print(user_id, habit_name, habit_id)
-        habit_button = types.InlineKeyboardButton(habit_name, callback_data=f'habit_{habit_id}_{habit_name}')
+        habit_button = types.InlineKeyboardButton(habit_name, callback_data=f'habit_{habit_id}')
 
         markup.add(habit_button)
 
@@ -216,7 +216,7 @@ def list_user_habits(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('habit_'))
 def habit_options(call):
     habit_id = call.data.split('_')[1]  # получаем ID привычки из данных callback
-    habit_name = call.data.split('_')[2] # получаем name привычки из данных callback
+    # habit_name = call.data.split('_')[2] # получаем name привычки из данных callback
 
     markup = types.InlineKeyboardMarkup()
 
@@ -226,7 +226,7 @@ def habit_options(call):
     delete_btn = types.InlineKeyboardButton("Удаление", callback_data=f'delete_{habit_id}')
 
     markup.add(view_btn, edit_btn, delete_btn)
-    bot.send_message(call.message.chat.id, f"Выберите действие для {habit_name}", reply_markup=markup)
+    bot.send_message(call.message.chat.id, f"Выберите действие для:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('view_'))
 def view_habit(call):
