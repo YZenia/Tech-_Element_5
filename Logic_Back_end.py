@@ -159,7 +159,7 @@ def get_user_habits(user_id):
     conn = connect_to_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT uh.user_id, h.habit_name
+        SELECT uh.user_id, h.habit_name, uh.habit_id
         FROM user_habits uh
         JOIN habits h ON uh.habit_id = h.id
         WHERE uh.user_id = ?
@@ -167,5 +167,11 @@ def get_user_habits(user_id):
     habits = cursor.fetchall()
     conn.close()
     return habits
+
+def get_habit_details():
+    pass
+
+
+
 
 
