@@ -8,17 +8,17 @@ from telebot import types
 # Импорт функций из файла Python Logic_Back_end.py
 from Logic_Back_end import (add_or_get_user,
                             add_habit_to_user_list, get_user_habits, get_new_habits,
-                            add_habit_to_user_list_directly, delete_habit_by_id)  # get_all_habits
+                            add_habit_to_user_list_directly, delete_habit_by_id, get_habit_info)  # get_all_habits
 
 # Ввод токена основного телеграм-бота и инициализация программы:
-TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
-bot = telebot.TeleBot(TOKEN)
+# TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
+# bot = telebot.TeleBot(TOKEN)
 
 # !!! ПЕРЕКЛЮЧИТЬ НА ОСНОВНОЙ ТЕЛЕГРАМ-БОТ В ФИНАЛЬНОЙ ВЕРСИИ ПРОГРАММЫ !!!
 
 # Ввод токена тестового телеграм-бота и инициализация программы
-# TEST_TOKEN = '7088266760:AAG2r0Dz3GJAymtpxqrQpapNgVC91u8E23Q'
-# bot = telebot.TeleBot(TEST_TOKEN)
+TEST_TOKEN = '7088266760:AAG2r0Dz3GJAymtpxqrQpapNgVC91u8E23Q'
+bot = telebot.TeleBot(TEST_TOKEN)
 
 
 # Функция вызова списка привычек из таблицы 'habits' в виде клавиатуры для выбора пользователя
@@ -37,14 +37,31 @@ def generate_markup(habits, page=0, list_type='habits'):
 
     return markup
 
+
+# Функция - вывод id пользователя по его имени username
+def get_user_id(user, reply_object):
+    """ Получает user_id пользователя по его username. В случае отсутствия username отправляет уведомление.
+    Args:
+        user: объект пользователя (например, message.from_user или call.from_user)
+        reply_object: объект для ответа (может быть message или call)
+    Returns:
+        user_id если username существует, иначе None
+    """
+    username = user.username
+    if username is None:
+        if isinstance(reply_object, telebot.types.Message):
+            bot.reply_to(reply_object, "Ваш аккаунт Telegram не имеет username. Пожалуйста, установите его.")
+        elif isinstance(reply_object, telebot.types.CallbackQuery):
+            bot.answer_callback_query(reply_object.id, "У вашего профиля в Telegram нет username!")
+        return None
+
+    return add_or_get_user(username)
+
+
+# Функция-приветствие нового пользователя
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    username = message.from_user.username
-    if username is None:
-        bot.reply_to(message, "Ваш аккаунт Telegram не имеет username. Пожалуйста, установите его.")
-        return
-
-    user_id = add_or_get_user(username)
+    user_id = get_user_id(message.from_user, message)
     welcome_text = "Добро пожаловать! Вот основные команды, которые вы можете использовать в боте Привычек:"
     markup = types.InlineKeyboardMarkup(row_width=2)
     commands_buttons = [
@@ -55,15 +72,11 @@ def send_welcome(message):
     markup.add(*commands_buttons)
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
 
-# Функция-приветствие нового пользователя
+
+# Функция на команду menu - идентична функции на команду start выше
 @bot.message_handler(commands=['menu'])
 def send_welcome(message):
-    username = message.from_user.username
-    if username is None:
-        bot.reply_to(message, "Ваш аккаунт Telegram не имеет username. Пожалуйста, установите его.")
-        return
-
-    user_id = add_or_get_user(username)
+    user_id = get_user_id(message.from_user, message)
     welcome_text = "Добро пожаловать! Вот основные команды, которые вы можете использовать в боте Привычек:"
     markup = types.InlineKeyboardMarkup(row_width=1)
     commands_buttons = [
@@ -74,15 +87,8 @@ def send_welcome(message):
     markup.add(*commands_buttons)
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
 
-# Функция по нажатию кнопки "База Привычек":
-# вывод всех привычек из таблицы 'habits', кроме уже добавленных в список привычек пользователя;
-# с возможностью выбора новой привычки для добавления в список привычек пользователя
 
-# @bot.callback_query_handler(func=lambda call: call.data == 'add_new_habit')
-# def show_all_habits_button(call):
-#     show_all_habits(call.message)
-
-
+# Функция добавления новой уникальной привычки пользователем
 @bot.callback_query_handler(func=lambda call: call.data == 'add_new_habit')
 def add_new_habit_button(call):
     # Начало диалога для добавления новой привычки
@@ -90,12 +96,14 @@ def add_new_habit_button(call):
     bot.register_next_step_handler(msg, process_habit_name_step, user_id=call.from_user.id)
 
 
+# Функция - подгрузка имени новой привычки, переход к описанию привычки
 def process_habit_name_step(message, user_id):
     habit_name = message.text
     msg = bot.send_message(message.chat.id, "Введите описание привычки:")
     bot.register_next_step_handler(msg, process_habit_description_step, user_id=user_id, habit_name=habit_name)
 
 
+# Функция - подгрузка описания новой привычки, переход к цели привычки
 def process_habit_description_step(message, user_id, habit_name):
     description = message.text
     msg = bot.send_message(message.chat.id, "Введите цель привычки:")
@@ -103,6 +111,7 @@ def process_habit_description_step(message, user_id, habit_name):
                                    description=description)
 
 
+# Функция - подгрузка цели новой привычки, переход к частоте напоминаний
 def process_habit_goal_step(message, user_id, habit_name, description):
     goal = message.text
     msg = bot.send_message(message.chat.id, "Введите частоту напоминаний (например, 'ежедневно'):")
@@ -110,6 +119,7 @@ def process_habit_goal_step(message, user_id, habit_name, description):
                                    description=description, goal=goal)
 
 
+# Функция - подгрузка частоты напоминаний; вызов функции, которая добавит привычку в таблицы habits и user_habits
 def process_habit_frequency_step(message, user_id, habit_name, description, goal):
     frequency = message.text
     username = message.from_user.username
@@ -118,7 +128,7 @@ def process_habit_frequency_step(message, user_id, habit_name, description, goal
     bot.send_message(message.chat.id, "Привычка успешно добавлена в ваш список.")
 
 
-# Функция - обработка запроса на вызов функции show_all_habits() - СМ. СТРОКУ 89
+# Функция - обработка запроса на вызов функции show_all_habits()
 @bot.callback_query_handler(func=lambda call: call.data == 'all_habits')
 def show_all_habits(call):
     # Эта функция должна быть реализована для начала процесса добавления новой привычки
@@ -159,13 +169,13 @@ def handle_add_habit(call):
     if result is None:
         # Обработка случая, когда достигнуто максимальное количество привычек
         bot.answer_callback_query(call.id, "Максимальное количество привычек достигнуто.")
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Максимальное количество привычек достигнуто!")
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Максимальное количество привычек достигнуто!")
     else:
         # Обработка успешного добавления привычки
         bot.answer_callback_query(call.id, "Привычка добавлена в ваш список.")
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Привычка добавлена!")
-
-
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Привычка добавлена!")
 
 
 # Функция - обработка запроса на перелистывание страниц списка привычек из 'habits'
@@ -173,11 +183,8 @@ def handle_add_habit(call):
 def handle_pagination(call):
     _, page, list_type = call.data.split('_')
     page = int(page)
-    if list_type == 'habits':
-        pass
-        # habits = get_all_habits()
-    elif list_type == 'newhabits':
-        habits = get_new_habits(call.from_user.username)
+    user_id = get_user_id(call.from_user, call)
+    habits = get_new_habits(user_id)
     markup = generate_markup(habits, page, list_type)
     bot.edit_message_text(
         chat_id=call.message.chat.id, message_id=call.message.message_id,
@@ -188,12 +195,7 @@ def handle_pagination(call):
 # Функция - обработка запроса на вывод списка привычек пользователя
 @bot.callback_query_handler(func=lambda call: call.data == 'list_habits')
 def list_user_habits(call):
-    username = call.from_user.username
-    if username is None:
-        bot.answer_callback_query(call.id, "У вашего профиля в Telegram нет username!")
-        return
-
-    user_id = add_or_get_user(username)
+    user_id = get_user_id(call.from_user, call)
 
     # Получение списка привычек пользователя
     habits = get_user_habits(user_id)
@@ -205,18 +207,23 @@ def list_user_habits(call):
 
     # Формирование текста сообщения со списком привычек в виде кнопок
     markup = types.InlineKeyboardMarkup()
-    for user_id, habit_name, habit_id  in habits:
+    for user_id, habit_name, habit_id in habits:
         print(user_id, habit_name, habit_id)
-        habit_button = types.InlineKeyboardButton(habit_name, callback_data=f'habit_{habit_id}_{habit_name}')
+        print(f'Callback Data: habit_{habit_id}_{habit_name}')
+        print(f'Length: {len(f"habit_{habit_id}_{habit_name}".encode("utf-8"))} bytes')
+        # habit_button = types.InlineKeyboardButton(habit_name, callback_data=f'habit_{habit_id}_{habit_name}')
+        habit_button = types.InlineKeyboardButton(habit_name, callback_data=f'habit_{habit_id}')
 
         markup.add(habit_button)
 
     bot.send_message(call.message.chat.id, "Ваши привычки:\n", reply_markup=markup)
 
+
+# Функция - вызов опций для работы с привычкой пользователя
 @bot.callback_query_handler(func=lambda call: call.data.startswith('habit_'))
 def habit_options(call):
     habit_id = call.data.split('_')[1]  # получаем ID привычки из данных callback
-    habit_name = call.data.split('_')[2] # получаем name привычки из данных callback
+    # habit_name = call.data.split('_')[2] # получаем name привычки из данных callback
 
     markup = types.InlineKeyboardMarkup()
 
@@ -226,15 +233,22 @@ def habit_options(call):
     delete_btn = types.InlineKeyboardButton("Удаление", callback_data=f'delete_{habit_id}')
 
     markup.add(view_btn, edit_btn, delete_btn)
-    bot.send_message(call.message.chat.id, f"Выберите действие для {habit_name}", reply_markup=markup)
+    # bot.send_message(call.message.chat.id, f"Выберите действие для {habit_name}", reply_markup=markup)
+    bot.send_message(call.message.chat.id, f"Выберите действие:", reply_markup=markup)
 
+
+# Функция - вызов информации по привычке пользователя
 @bot.callback_query_handler(func=lambda call: call.data.startswith('view_'))
 def view_habit(call):
     habit_id = call.data.split('_')[1]
-    habit_details = get_user_habits(habit_id)  # предполагается, что эта функция возвращает детали привычки
+    habit_details = get_habit_info(habit_id)  # предполагается, что эта функция возвращает детали привычки
     bot.answer_callback_query(call.id)
-    bot.send_message(call.message.chat.id, f'Детали привычки: {habit_details}')
+    bot.send_message(call.message.chat.id, f'Название привычки: {habit_details[0][0]}\n'
+                     f'Описание: {habit_details[0][1]}\n'
+                     f'Цель: {habit_details[0][2]}')
 
+
+# Функция - вызов редактирования привычки пользователя - ПОКА НЕ ОБРАБАТЫВАЕТ ДАННЫЕ
 @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_'))
 def edit_habit(call):
     habit_id = call.data.split('_')[1]
@@ -242,10 +256,13 @@ def edit_habit(call):
     bot.answer_callback_query(call.id)
     bot.send_message(call.message.chat.id, "Введите новые данные для привычки. (Это место для диалога редактирования)")
 
+
+# Функция - удаление привычки из списка привычек пользователя
 @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_'))
 def delete_habit(call):
+    user_id = get_user_id(call.from_user, call)
     habit_id = call.data.split('_')[1]  # Извлекаем ID привычки из данных callback
-    result = delete_habit_by_id(habit_id)  # Пытаемся удалить привычку и получаем результат операции
+    result = delete_habit_by_id(habit_id, user_id)  # Пытаемся удалить привычку и получаем результат операции
 
     # Проверяем, было ли удаление успешным
     if result:
@@ -254,6 +271,7 @@ def delete_habit(call):
     else:
         bot.answer_callback_query(call.id, "Не удалось удалить привычку. Пожалуйста, попробуйте позже.")
         bot.send_message(call.message.chat.id, "Не удалось удалить привычку. Пожалуйста, попробуйте позже.")
+
 
 # Запуск работы телеграм-бота с пользователем
 bot.polling()
