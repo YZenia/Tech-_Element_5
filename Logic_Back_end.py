@@ -54,14 +54,15 @@ def add_new_habit(user_id, habit_name, description, goal, frequency):
     #     return print(f"Maximum number of habits reached.\n"
     #                  f"Cannot add more habits.")
     # else:
-    cursor.execute(
-    "INSERT INTO habits (user_id, habit_name, habit_description, habit_goal, habit_frequency) "
-            "VALUES (?, ?, ?, ?, ?)", (user_id, habit_name, description, goal, frequency)
-    )
+    cursor.execute(""
+                   "INSERT INTO habits (user_id, habit_name, habit_description, habit_goal, habit_frequency) "
+                   "VALUES (?, ?, ?, ?, ?)"
+                   "", (user_id, habit_name, description, goal, frequency))
     conn.commit()
     conn.close()
 
 
+# Функция добавления новой привычки в базу данных - и в таблицу habits, и в таблицу user_habits
 def add_habit_to_user_list_directly(username, user_id, habit_name, description, goal, frequency='ежедневно'):
     conn = connect_to_db()
     cursor = conn.cursor()
@@ -81,8 +82,7 @@ def add_habit_to_user_list_directly(username, user_id, habit_name, description, 
         conn.close()
 
 
-# Функция добавления новой привычки в базу данных в таблицу 'user_habits'
-# - привычки конкретного пользователя
+# Функция добавления новой привычки в таблицу 'user_habits' - привычки конкретного пользователя
 def add_habit_to_user_list(user_id, habit_id, frequency='ежедневно'):
     conn = connect_to_db()
     try:
@@ -94,7 +94,7 @@ def add_habit_to_user_list(user_id, habit_id, frequency='ежедневно'):
         )
         count = cursor.fetchone()[0]
 
-        if count >= 3:
+        if count >= 3:  # Ограничение - не более 3х привычек на 1го пользователя
             print("Максимальное количество привычек достигнуто.")
             return None
         else:
@@ -153,29 +153,45 @@ def get_new_habits(user_id):
     return new_habits
 
 
-
 # Функция вывода списка всех привычек конкретного пользователя из таблицы 'user_habits'
 def get_user_habits(user_id):
     conn = connect_to_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT uh.user_id, h.habit_name, uh.habit_id
-        FROM user_habits uh
-        JOIN habits h ON uh.habit_id = h.id
+        SELECT uh.user_id, h.habit_name, h.id
+        FROM habits h
+        JOIN user_habits uh ON h.id = uh.habit_id
         WHERE uh.user_id = ?
     """, (user_id,))
     habits = cursor.fetchall()
     conn.close()
     return habits
 
-def delete_habit_by_id(habit_id):
+
+# Функция вывода информации о привычке из таблицы 'habits'
+def get_habit_info(habit_id):
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT h.habit_name, h.habit_description, h.habit_goal
+        FROM habits h
+        WHERE h.id = ?
+    """, (habit_id,))
+    habit_details = cursor.fetchall()
+    conn.close()
+    return habit_details
+
+
+# Функция удаления привычки из таблицы 'user_habits'
+def delete_habit_by_id(habit_id, user_id):
     try:
         with connect_to_db() as conn:
             cursor = conn.cursor()
             # Удаление привычки из таблицы user_habits
-            cursor.execute("DELETE FROM user_habits WHERE habit_id = ?", (habit_id,))
-            # Удаление привычки из таблицы habits
-            cursor.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
+            cursor.execute("DELETE FROM user_habits WHERE (habit_id = ? AND user_id = ?)",
+                           (habit_id, user_id, ))
+            # Удаление привычки из таблицы habits - ЗАЧЕМ?
+            # cursor.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
             conn.commit()
             print("Привычка успешно удалена.")
             return True
