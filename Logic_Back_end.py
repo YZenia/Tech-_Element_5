@@ -1,14 +1,15 @@
 # Импортируем модуль для работы с SQLite
 import sqlite3
-import datetime
+from datetime import datetime, timedelta
 
 
 # Подключаемся к базе данных 'habit_tracker1.db'
 def connect_to_db():
     return sqlite3.connect('habit_tracker1.db')
 
+# 📌--------------------------------------Creacted by sunTz1 -start-------------------------------------📌
+# Adds new user to DB
 
-# Функция добавления нового пользователя в базу данных
 
 def add_user(username, chat_id):
     conn = connect_to_db()
@@ -23,7 +24,6 @@ def add_user(username, chat_id):
             f"DEBUG: User '{username}' found with ID {user_id}. chat_id: {chat_id}")
     else:
         print(f"DEBUG: User '{username}' not found, adding to database.")
-        # Добавление нового пользователя, если он не найден
         cursor.execute(
             "INSERT INTO users (username, chat_id) VALUES (?,?)", (username, chat_id))
         conn.commit()
@@ -32,7 +32,7 @@ def add_user(username, chat_id):
             f"DEBUG: New user '{username}' added with ID {user_id}.chat_id: {chat_id}")
     conn.close()
 
-# Возвращает ID пользователя по нику
+# Get user id by username. Returned user's id
 
 
 def get_user_id_by_username(username):
@@ -41,7 +41,6 @@ def get_user_id_by_username(username):
 
     print(f"DEBUG: Checking if user '{username}' exists in the database.")
 
-    # Проверка, существует ли такой пользователь
     cursor.execute("SELECT id FROM users WHERE username = (?)", (username,))
     result = cursor.fetchone()
     if result:
@@ -50,7 +49,7 @@ def get_user_id_by_username(username):
     conn.close()
     return 0
 
-# IN FUTURE
+# Get user chat id by usersname. Usefull for sending notifications
 
 
 def get_user_chat_id_by_username(username):
@@ -59,7 +58,6 @@ def get_user_chat_id_by_username(username):
 
     print(f"DEBUG: Checking if user '{username}' exists in the database.")
 
-    # Проверка, существует ли такой пользователь
     cursor.execute(
         "SELECT chat_id FROM users WHERE username = (?)", (username,))
     result = cursor.fetchone()
@@ -70,7 +68,8 @@ def get_user_chat_id_by_username(username):
     conn.close()
     return 0
 
-# Счетчик выполнения
+
+# Get all user habits id. Returns tuple with int
 
 
 def get_all_user_habits_id(user_id):
@@ -80,13 +79,17 @@ def get_all_user_habits_id(user_id):
     all_user_habits_id = cursor.fetchall()
     return all_user_habits_id
 
+# Get habit by it's id. Returns tuple with habits information
+
 
 def get_habit_by_id(habit_id):
     conn = connect_to_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM habits WHERE id= (?)", (habit_id,))
-    habit = cursor.fetchall()
+    habit = cursor.fetchone()
     return habit
+
+# Set habit result (result: 1 - success, 0 - fail)
 
 
 def set_habit_result(habit_id, result):
@@ -121,6 +124,78 @@ def set_habit_result(habit_id, result):
             finally:
                 conn.close()
 
+
+# Get frequency per week (Returns tuple with strings: пн вт ср)
+def habit_frequency_per_week(habit_id):
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT habit_frequency_per_week FROM habits WHERE id= (?)", (habit_id,))
+    return cursor.fetchone()
+
+# Get frequency per day (Returns tuple with strings: 9:00 12:00 15:00)
+
+
+def habit_frequency_per_day(habit_id):
+    conn = connect_to_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT habit_frequency_per_day FROM habits WHERE id= (?)", (habit_id,))
+    return cursor.fetchone()
+
+
+# # def notification_time_cheсker(habits):
+#     current_date = datetime.now()
+#     day_of_week = current_date.weekday()
+#     # Преобразование числового значения дня недели в текстовый формат
+#     days_of_week = ["пн", "вт", "ср",
+#                     "чт", "пт", "сб", "вс"]
+#     today = days_of_week[day_of_week]
+#     for habit in habits:
+#         print(habit)
+#         habit_days = habit[5].split()
+
+#         for day in habit_days:
+#             if (day == today):
+#                 habit_times = habit[6].split()
+#                 for time in habit_times:
+#                     habit_time = datetime.strptime(time, "%H:%M").time()
+#                     habit_time_limit = habit_time
+#                     habit_time_limit += timedelta(minutes=1)
+#                     current_time = datetime.now().time()
+#                     print(f'TIME NOW: {current_time} CURRENT TIME: {time}')
+#                     if (current_time >= habit_time & current_time <= habit_time_limit):
+#                         return habit
+#     return None
+
+
+def notification_time_checker(habits):
+    current_date = datetime.now()
+    day_of_week = current_date.weekday()
+    days_of_week = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
+    today = days_of_week[day_of_week]
+
+    for habit in habits:
+        habit_days = habit[5].split()
+        if today in habit_days:
+            habit_times = habit[6].split()
+            for time in habit_times:
+                habit_time = datetime.strptime(time, "%H:%M").time()
+                current_time = datetime.now().time()
+                # Create a one-minute interval starting at habit_time
+                start_interval = habit_time
+                end_interval = (datetime.combine(
+                    datetime.today(), habit_time) + timedelta(minutes=1)).time()
+
+                if start_interval <= current_time <= end_interval:
+                    # Return the habit if the current time is within the one-minute interval
+                    return habit
+
+    return None
+
+# 📌--------------------------------------Creacted by sunTz1 -end-------------------------------------📌
+
+
 # Функция добавления новой привычки в базу данных - и в таблицу habits, и в таблицу user_habits
 
 
@@ -128,7 +203,7 @@ def add_habit_to_user_list_directly(username, user_id, habit_name, description, 
     conn = connect_to_db()
     cursor = conn.cursor()
     true_user_id = get_user_id_by_username(username)
-    habit_start_date_and_time = datetime.datetime.today()
+    habit_start_date_and_time = datetime.today()
     print(f"USER_ID {true_user_id}")
     try:
         # Добавляем привычку в таблицу habits
@@ -153,18 +228,18 @@ def add_habit_to_user_list_directly(username, user_id, habit_name, description, 
 #     conn.close()
 #     return habits
 
-def get_all_habits():
-    """
-    Получить список всех привычек, где user_id равен NULL.
-    Это могут быть общедоступные или стандартные привычки, доступные всем пользователям.
-    """
-    conn = connect_to_db()
-    cursor = conn.cursor()
-    # Изменение запроса для фильтрации привычек, где user_id равен NULL
-    cursor.execute("SELECT id, habit_name FROM habits WHERE user_id IS NULL")
-    habits = cursor.fetchall()
-    conn.close()
-    return habits
+# def get_all_habits():
+#     """
+#     Получить список всех привычек, где user_id равен NULL.
+#     Это могут быть общедоступные или стандартные привычки, доступные всем пользователям.
+#     """
+#     conn = connect_to_db()
+#     cursor = conn.cursor()
+#     # Изменение запроса для фильтрации привычек, где user_id равен NULL
+#     cursor.execute("SELECT id, habit_name FROM habits WHERE user_id IS NULL")
+#     habits = cursor.fetchall()
+#     conn.close()
+#     return habits
 
 
 # Функция вывода списка всех привычек из таблицы 'habits', кроме тех,

@@ -9,19 +9,19 @@ from telebot import types
 # ??? ЗАПРОС НА УДАЛЕНИЕ ???
 # from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # Импорт функций из файла Python Logic_Back_end.py
-from Logic_Back_end import (get_habit_by_id, get_all_user_habits_id, set_habit_result, add_user, get_user_id_by_username, get_user_chat_id_by_username,
+from Logic_Back_end import (notification_time_checker, get_habit_by_id, get_all_user_habits_id, set_habit_result, add_user, get_user_id_by_username, get_user_chat_id_by_username,
                             get_user_habits, get_new_habits,
-                            add_habit_to_user_list_directly, delete_habit_by_id, get_habit_info, get_all_habits)  # get_all_habits
+                            add_habit_to_user_list_directly, delete_habit_by_id, get_habit_info)  # get_all_habits
 
 # Ввод токена основного телеграм-бота и инициализация программы:
-TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
-bot = telebot.TeleBot(TOKEN)
+# TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
+# bot = telebot.TeleBot(TOKEN)
 
 # !!! ПЕРЕКЛЮЧИТЬ НА ОСНОВНОЙ ТЕЛЕГРАМ-БОТ В ФИНАЛЬНОЙ ВЕРСИИ ПРОГРАММЫ !!!
 
 # Ввод токена тестового телеграм-бота и инициализация программы
-# TEST_TOKEN = '7025920413:AAFdfbUqEeW5yH0A2-D3NEIjNwLTO6rBWkI'
-# bot = telebot.TeleBot(TEST_TOKEN)
+TEST_TOKEN = '7025920413:AAFdfbUqEeW5yH0A2-D3NEIjNwLTO6rBWkI'
+bot = telebot.TeleBot(TEST_TOKEN)
 
 
 # Функция вызова списка привычек из таблицы 'habits' в виде клавиатуры для выбора пользователя
@@ -153,7 +153,7 @@ def process_habit_description_step(message, user_id, habit_name):
 def process_habit_goal_step(message, user_id, habit_name, description):
     goal = message.text
     msg = bot.send_message(
-        message.chat.id, "Введите кол-во дней в неделю:")
+        message.chat.id, "Введите дни недели через пробел(Пример:пн вт ср чт пт сб вс):")
     bot.register_next_step_handler(msg, process_habit_frequency_step_1, user_id=user_id, habit_name=habit_name,
                                    description=description, goal=goal)
 
@@ -163,7 +163,7 @@ def process_habit_goal_step(message, user_id, habit_name, description):
 def process_habit_frequency_step_1(message, user_id, habit_name, description, goal):
     frequency_per_week = message.text
     msg = bot.send_message(
-        message.chat.id, "Введите кол-во раз в день:")
+        message.chat.id, "Введите время для напоминаний через пробел(Пример:8:00 15:00 17:00)")
     bot.register_next_step_handler(
         msg, process_habit_add, user_id=user_id, habit_name=habit_name, description=description, goal=goal, frequency_per_week=frequency_per_week)
 
@@ -209,14 +209,14 @@ def show_all_habits(call):
 
 # Функция - вывод всех привычек из таблицы 'habits' с возможностью выбора
 # новой привычки для добавления в список привычек пользователя - СМ. СТРОКУ 61
-@bot.message_handler(commands=['allhabits'])
-def show_all_habits(message):
-    habits = get_all_habits()
-    if not habits:
-        bot.send_message(message.chat.id, "Список привычек пуст.")
-        return
-    markup = generate_markup(habits, list_type='habits')
-    bot.send_message(message.chat.id, "Выберите привычку для добавления:", reply_markup=markup)
+# @bot.message_handler(commands=['allhabits'])
+# def show_all_habits(message):
+#     habits = get_all_habits()
+#     if not habits:
+#         bot.send_message(message.chat.id, "Список привычек пуст.")
+#         return
+#     markup = generate_markup(habits, list_type='habits')
+#     bot.send_message(message.chat.id, "Выберите привычку для добавления:", reply_markup=markup)
 
 
 # Функция - обработка запроса на добавление пользователю новой привычки из таблицы 'habits'
@@ -376,9 +376,9 @@ def send_notifications(user_id, user_chat_id, notification_text, habit_id):
     markup = types.InlineKeyboardMarkup(row_width=2)
     commands_buttons = [
         types.InlineKeyboardButton(
-            "ВЫПОЛНИЛ", callback_data=f"complete,{habit_id}"),
+            "ВЫПОЛНИЛ", callback_data=f"complete,{habit_id},{notification_text}"),
         types.InlineKeyboardButton(
-            "ПРОПУСТИЛ", callback_data=f"failed,{habit_id}")
+            "ПРОПУСТИЛ", callback_data=f"failed,{habit_id},{notification_text}")
     ]
     markup.add(*commands_buttons)
     bot.send_message(user_chat_id, notification_text, reply_markup=markup)
@@ -386,38 +386,43 @@ def send_notifications(user_id, user_chat_id, notification_text, habit_id):
 
 @bot.callback_query_handler(func=lambda callback_query: callback_query.data.startswith('complete') or callback_query.data.startswith('failed'))
 def notification_result_complete(callback_query):
-    action, habit_id = callback_query.data.split(',')
+    action, habit_id, notification_text = callback_query.data.split(',')
 
     if action == 'complete':
         set_habit_result(habit_id, 1)
         bot.send_message(callback_query.message.chat.id,
-                         f"Задача {habit_id} выполнена успешно!")
+                         f"{notification_text} выполнена успешно 😎😁🤙")
+        bot.delete_message(callback_query.message.chat.id,
+                           callback_query.message.message_id)
     elif action == 'failed':
         set_habit_result(habit_id, 0)
         bot.send_message(callback_query.message.chat.id,
-                         f"Задача {habit_id} не выполнена.")
-
-
-# Запуск работы телеграм-бота с пользователем
-# Главная функция
-# Функция для выполнения проверки времени с периодичностью
+                         f"{notification_text} не выполнена 🤬😡😭")
+        bot.delete_message(callback_query.message.chat.id,
+                           callback_query.message.message_id)
 
 
 def start_tracking(username):
     user_id = get_user_id_by_username(username)
     user_chat_id = get_user_chat_id_by_username(username)
+    all_user_habits_id = get_all_user_habits_id(user_id)
+    habits = []
+    for id in all_user_habits_id:
+        print(id)
+        habits.append(get_habit_by_id(id[1]))
+
     while True:
-        all_user_habits_id = get_all_user_habits_id(user_id)
-        habit = get_habit_by_id(all_user_habits_id[0][1])
-        habit_id = habit[0][0]
-        habit_name = habit[0][2]
+        habit_to_notificate = notification_time_checker(habits)
+        if habit_to_notificate:
+            send_notifications(user_id, user_chat_id,
+                               habit_to_notificate[2], habit_to_notificate[0])
 
-        print(habit)
-        send_notifications(user_id, user_chat_id, habit_name, habit_id)
-        # Пауза перед следующей проверкой времени
-        time.sleep(35)  # Проверка каждую минуту
+        time.sleep(60)  # Проверка каждую минуту
 
 
+# Запуск работы телеграм-бота с пользователем
+# Главная функция
+# Функция для выполнения проверки времени с периодичностью
 if __name__ == "__main__":
     # Создание потока для выполнения проверки времени
     bot.polling(none_stop=True)
