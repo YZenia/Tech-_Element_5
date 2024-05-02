@@ -14,8 +14,8 @@ from Logic_Back_end import (notification_time_checker, get_habit_by_id, get_all_
                             add_habit_to_user_list_directly, delete_habit_by_id, get_habit_info)  # get_all_habits
 
 # Ввод токена основного телеграм-бота и инициализация программы:
-# TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
-# bot = telebot.TeleBot(TOKEN)
+TOKEN = '6795112102:AAFBiEZg3Jgi2XxAoqsJvLzUGfSsmvNempo'
+bot = telebot.TeleBot(TOKEN)
 
 # !!! ПЕРЕКЛЮЧИТЬ НА ОСНОВНОЙ ТЕЛЕГРАМ-БОТ В ФИНАЛЬНОЙ ВЕРСИИ ПРОГРАММЫ !!!
 
