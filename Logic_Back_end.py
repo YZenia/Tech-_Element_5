@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # Подключаемся к базе данных 'habit_tracker1.db'
 def connect_to_db():
-    return sqlite3.connect('habit_tracker1.db')
+    return sqlite3.connect('habit_tracker01.db')
 
 # 📌--------------------------------------Creacted by sunTz1 -start-------------------------------------📌
 # Adds new user to DB

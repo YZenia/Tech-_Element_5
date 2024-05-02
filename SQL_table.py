@@ -4,7 +4,7 @@ import sqlite3
 
 # Функция создания базы данных
 def setup_database():
-    conn = sqlite3.connect('habit_tracker1.db')
+    conn = sqlite3.connect('habit_tracker01.db')
     cursor = conn.cursor()
 
     # Включение поддержки внешних ключей
